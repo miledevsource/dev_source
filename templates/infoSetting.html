@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* 전체 레이아웃 (좌측 정렬 적용) */
+    .settings-wrapper { display: flex; gap: 20px; max-width: 1100px; margin: 20px 0 20px 20px; align-items: flex-start; }
+    
+    /* -------------------------------------
+       좌측: 설정 카테고리 목록
+       ------------------------------------- */
+    .settings-sidebar { width: 300px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; flex-shrink: 0; }
+    .sidebar-header { background: #8e44ad; color: white; padding: 15px 20px; font-weight: bold; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .sidebar-list { list-style: none; padding: 0; margin: 0; }
+    .sidebar-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: all 0.2s ease; background: white; border-left: 4px solid transparent; }
+    .sidebar-item:hover { background: #fdfbfd; border-left-color: #d7bde2; }
+    .sidebar-item.active { background: #fdfbfd; border-left-color: #8e44ad; }
+    .item-title { font-weight: bold; color: #333; margin-bottom: 5px; font-size: 15px; }
+    .item-desc { font-size: 12px; color: #888; }
+    .item-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-top: 5px; }
+    .badge-oracle { background: #fdedec; color: #c0392b; }
+    .badge-pg { background: #eaf2f8; color: #2980b9; }
+    .badge-github { background: #ebedef; color: #2c3e50; }
+
+    /* -------------------------------------
+       우측: 입력 폼 영역
+       ------------------------------------- */
+    .settings-content { flex: 1; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 30px; }
+    .content-header { border-bottom: 2px solid #8e44ad; padding-bottom: 15px; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; }
+    .content-header h2 { margin: 0; font-size: 20px; font-weight: 800; color: #333; }
+    
+    /* 폼 공통 요소 */
+    .form-group { display: flex; align-items: center; margin-bottom: 15px; }
+    .title-label { width: 160px; font-weight: 600; font-size: 14px; color: #444; margin-bottom: 0; }
+    .form-control { flex: 1; padding: 10px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; transition: 0.2s; }
+    .form-control:focus { border-color: #8e44ad; outline: none; box-shadow: 0 0 0 0.2rem rgba(142, 68, 173, 0.25); }
+    
+    .form-section { display: none; animation: fadeIn 0.3s; }
+    .form-section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* 하단 저장 버튼 */
+    .btn-save { background-color: #8e44ad; color: white; border: none; border-radius: 6px; padding: 15px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 30px; transition: 0.2s; }
+    .btn-save:hover { background-color: #732d91; }
+</style>
+
+<div class="settings-wrapper">
+    <div class="settings-sidebar">
+        <div class="sidebar-header">
+            <span>설정 카테고리</span>
+        </div>
+        <ul class="sidebar-list">
+            <li class="sidebar-item active" onclick="switchTab('oracle', this)">
+                <div class="item-title">Oracle DB</div>
+                <div class="item-desc">오라클 데이터베이스 접속 정보</div>
+                <span class="item-badge badge-oracle">DATABASE</span>
+            </li>
+            <li class="sidebar-item" onclick="switchTab('postgres', this)">
+                <div class="item-title">PostgreSQL</div>
+                <div class="item-desc">포스트그레 데이터베이스 접속 정보</div>
+                <span class="item-badge badge-pg">DATABASE</span>
+            </li>
+            <li class="sidebar-item" onclick="switchTab('github', this)">
+                <div class="item-title">GitHub Info</div>
+                <div class="item-desc">버전관리 저장소 연동 정보</div>
+                <span class="item-badge badge-github">VCS / SYNC</span>
+            </li>
+        </ul>
+    </div>
+
+    <div class="settings-content">
+        <div id="form-oracle" class="form-section active">
+            <div class="content-header">
+                <h2>🔴 Oracle DB 연결 설정</h2>
+            </div>
+            <div class="form-group"><label class="title-label">👤 접속 계정:</label><input type="text" id="ORACLE_USER" class="form-control" placeholder="예: XICU"></div>
+            <div class="form-group"><label class="title-label">🔑 접속 비밀번호:</label><input type="password" id="ORACLE_PASSWORD" class="form-control" placeholder="비밀번호 입력"></div>
+            <div class="form-group"><label class="title-label">🔗 접속 DSN:</label><input type="text" id="ORACLE_DSN" class="form-control" placeholder="IP:PORT/SID (예: 172.17.12.107:1555/ARPAHDEV)"></div>
+        </div>
+
+        <div id="form-postgres" class="form-section">
+            <div class="content-header">
+                <h2>🐘 PostgreSQL 연결 설정</h2>
+            </div>
+            <div class="form-group"><label class="title-label">🌐 호스트 (IP):</label><input type="text" id="PG_HOST" class="form-control" placeholder="예: 192.168.228.128"></div>
+            <div class="form-group"><label class="title-label">🚪 포트 (Port):</label><input type="text" id="PG_PORT" class="form-control" value="5432"></div>
+            <div class="form-group"><label class="title-label">🗄️ DB 이름:</label><input type="text" id="PG_DB" class="form-control" placeholder="예: icu_db"></div>
+            <div class="form-group"><label class="title-label">👤 접속 계정:</label><input type="text" id="PG_USER" class="form-control" placeholder="예: postgres"></div>
+            <div class="form-group"><label class="title-label">🔑 접속 비밀번호:</label><input type="password" id="PG_PASSWORD" class="form-control"></div>
+        </div>
+
+        <div id="form-github" class="form-section">
+            <div class="content-header">
+                <h2>🐙 GitHub 연동 설정</h2>
+            </div>
+            <div class="form-group"><label class="title-label">🔑 Personal Token:</label><input type="password" id="GITHUB_TOKEN" class="form-control" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"></div>
+            <div class="form-group"><label class="title-label">📁 레포지토리:</label><input type="text" id="GITHUB_REPO" class="form-control" placeholder="예: miledevsource/wonju_object"></div>
+            <div class="form-group"><label class="title-label">🌿 브랜치명:</label><input type="text" id="GITHUB_BRANCH" class="form-control" value="main"></div>
+            <div class="form-group"><label class="title-label">📂 기본 업로드 경로:</label><input type="text" id="GITHUB_PATH" class="form-control" placeholder="예: oracle_ddl"></div>
+        </div>
+
+        <button class="btn-save" onclick="previewAndSaveEnv()">💾 환경설정 저장 (.env)</button>
+    </div>
+</div>
+
+<script>
+    // 탭(카테고리) 전환 함수
+    function switchTab(tabName, element) {
+        // 모든 탭 메뉴 비활성화
+        document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+        // 클릭한 탭 활성화
+        element.classList.add('active');
+
+        // 모든 폼 숨김
+        document.querySelectorAll('.form-section').forEach(form => form.classList.remove('active'));
+        // 선택한 폼 표시
+        document.getElementById('form-' + tabName).classList.add('active');
+    }
+
+    // 작성된 내용 모아서 .env 형식으로 미리보기 후 저장 (임시 팝업)
+    function previewAndSaveEnv() {
+        // Oracle 값 수집
+        const oraUser = document.getElementById('ORACLE_USER').value;
+        const oraPass = document.getElementById('ORACLE_PASSWORD').value;
+        const oraDsn = document.getElementById('ORACLE_DSN').value;
+
+        // Postgres 값 수집
+        const pgHost = document.getElementById('PG_HOST').value;
+        const pgPort = document.getElementById('PG_PORT').value;
+        const pgDb = document.getElementById('PG_DB').value;
+        const pgUser = document.getElementById('PG_USER').value;
+        const pgPass = document.getElementById('PG_PASSWORD').value;
+
+        // GitHub 값 수집
+        const ghToken = document.getElementById('GITHUB_TOKEN').value;
+        const ghRepo = document.getElementById('GITHUB_REPO').value;
+        const ghBranch = document.getElementById('GITHUB_BRANCH').value;
+        const ghPath = document.getElementById('GITHUB_PATH').value;
+
+        // .env 파일 형태로 문자열 조합
+        const envContent = `
+# ==========================================
+# 🔴 Oracle Database Settings
+# ==========================================
+ORACLE_USER=${oraUser}
+ORACLE_PASSWORD=${oraPass}
+ORACLE_DSN=${oraDsn}
+
+# ==========================================
+# 🐘 PostgreSQL Settings
+# ==========================================
+POSTGRES_HOST=${pgHost}
+POSTGRES_PORT=${pgPort}
+POSTGRES_DB=${pgDb}
+POSTGRES_USER=${pgUser}
+POSTGRES_PASSWORD=${pgPass}
+
+# ==========================================
+# 🐙 GitHub Settings
+# ==========================================
+GITHUB_TOKEN=${ghToken}
+GITHUB_REPO=${ghRepo}
+GITHUB_BRANCH=${ghBranch}
+GITHUB_PATH=${ghPath}
+`.trim();
+
+        // 사용자에게 팝업으로 확인창 띄우기
+        const isConfirm = confirm(`아래 내용으로 .env 파일을 갱신하시겠습니까?\n\n---------------------------------------\n${envContent}\n---------------------------------------`);
+
+        if (isConfirm) {
+            // 차후 백엔드 API 연동 위치 (예: fetch('/api/env/save', {...}))
+            alert("✅ .env 환경설정이 성공적으로 저장되었습니다!");
+        }
+    }
+</script>
+{% endblock %}

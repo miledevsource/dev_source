@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>e-ICU 환경설정</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* 1. 전체 창 강제 고정 (창을 줄여도 안 깨지게 함) */
+        body { 
+            font-family: 'Noto Sans KR', sans-serif !important; 
+            background-color: #f4f5f7 !important; 
+            margin: 0 !important;
+            padding: 0 !important;
+            min-width: 1200px !important; /* 창 크기가 작아져도 압축되지 않음 */
+        }
+        
+        /* ==========================================
+           사이드바 절대 고정 영역 (Bootstrap 개입 금지)
+           ========================================== */
+        .sidebar-fixed { 
+            position: fixed !important; 
+            left: 0 !important; 
+            top: 0 !important; 
+            width: 260px !important;      /* 너비 260px 절대 고정 */
+            height: 100vh !important; 
+            background-color: #2b2c36 !important; 
+            z-index: 9999 !important;
+            overflow: hidden !important;  /* 삐져나가는 것 원천 차단 */
+        }
+        
+        /* 로고 영역 고정 */
+        .sidebar-fixed .logo-area { 
+            width: 260px !important;
+            height: 100px !important;
+            line-height: 100px !important;
+            text-align: center !important; 
+            font-size: 24px !important; 
+            font-weight: 900 !important; 
+            color: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        /* 메뉴 라벨 고정 */
+        .sidebar-fixed .menu-label { 
+            font-size: 11px !important; 
+            color: #d81b2f !important; 
+            font-weight: bold !important; 
+            padding: 10px 25px !important; 
+            margin: 0 !important;
+        }
+
+        /* 메뉴 리스트 감싸는 영역 */
+        .sidebar-fixed .menu-list {
+            padding: 0 15px !important;
+            margin: 0 !important;
+        }
+
+        /* 🚀 개별 메뉴 항목 강제 고정 (위치, 두께, 폰트 절대 안 변함) */
+        .sidebar-fixed .menu-item { 
+            display: block !important; 
+            width: 100% !important; 
+            height: 50px !important; 
+            line-height: 50px !important; /* 세로 중앙 정렬 고정 */
+            padding: 0 0 0 20px !important; /* 왼쪽 텍스트 시작점 고정 */
+            margin: 0 0 5px 0 !important; 
+            color: #a0a2ac !important; 
+            background-color: transparent !important;
+            font-size: 15px !important;   /* 폰트 사이즈 절대 고정 */
+            font-weight: 500 !important;  /* 폰트 두께 절대 고정 */
+            border-radius: 4px !important;
+            text-decoration: none !important;
+            box-sizing: border-box !important; /* 패딩이 너비를 밀어내지 못하게 고정 */
+            white-space: nowrap !important; /* 창이 줄어도 텍스트가 밑으로 떨어지지 않음 */
+        }
+        
+        .sidebar-fixed .menu-item:hover { 
+            color: #ffffff !important; 
+            background-color: rgba(255,255,255,0.05) !important; 
+        }
+
+        /* 선택된 메뉴 (두께나 폰트 크기 변경 절대 없음, 색상만 변경) */
+        .sidebar-fixed .menu-item.active { 
+            color: #ffffff !important; 
+            background-color: #d81b2f !important; 
+            font-size: 15px !important;  /* active 시에도 폰트 동일 */
+            font-weight: 500 !important; /* active 시에도 두께 동일 */
+        }
+
+        /* 🚀 로그아웃 버튼 영역 (사이드바 맨 밑바닥에 딱 붙여서 고정) */
+        .sidebar-fixed .logout-wrapper { 
+            position: absolute !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            width: 260px !important; /* 사이드바 너비와 동일하게 강제 */
+            padding: 20px !important; 
+            box-sizing: border-box !important; /* padding 때문에 박스가 커지는 현상 방지 */
+        }
+
+        .sidebar-fixed .logout-btn { 
+            display: block !important;
+            width: 100% !important; 
+            height: 50px !important;
+            line-height: 50px !important;
+            text-align: center !important;
+            background-color: #3f404a !important; 
+            color: #a0a2ac !important; 
+            border-radius: 25px !important; 
+            font-size: 14px !important; 
+            text-decoration: none !important;
+            box-sizing: border-box !important;
+        }
+        .sidebar-fixed .logout-btn:hover {
+            background-color: #50525d !important;
+            color: #ffffff !important;
+        }
+        
+        /* ==========================================
+           우측 메인 콘텐츠 영역 (사이드바 너비 260px 제외한 나머지)
+           ========================================== */
+        .main-wrapper { 
+            position: absolute !important;
+            left: 260px !important; /* 우측으로 260px 밀어냄 */
+            top: 0 !important;
+            right: 0 !important;
+            min-height: 100vh !important;
+        }
+        
+        .top-header { 
+            height: 60px; 
+            background-color: #f4f5f7; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 0 30px; 
+        }
+        .top-header .notice-text { 
+            font-size: 13px; 
+            color: #666; 
+        }
+    </style>
+</head>
+<body>
+    
+    <aside class="sidebar-fixed">
+        <div class="logo-area">e-ICU 환경설정</div>
+        
+        <div class="menu-label">MENU</div>
+        
+        <div class="menu-list">
+            <a href="/" class="menu-item {% if request.path == '/' %}active{% endif %}">
+                대시보드
+            </a>
+            
+            <a href="/xml-config" class="menu-item {% if request.path == '/xml-config' %}active{% endif %}">
+                XML Config 설정
+            </a>
+            
+            <a href="/ddl-extract" class="menu-item {% if request.path == '/ddl-extract' %}active{% endif %}">
+                DDL 추출
+            </a>
+
+            <a href="/env-config" class="menu-item {% if request.path == '/env-config' %}active{% endif %}">
+                기본셋팅 DB (.env)
+            </a>
+
+            <a href="/Provider-Api" class="menu-item {% if request.path == '/Provider-Api' %}active{% endif %}">
+                REST API 생성
+            </a>
+
+            <a href="/info-setting" class="menu-item {% if request.path == '/info-setting' %}active{% endif %}">
+                환경셋팅
+            </a>
+
+        </div>
+        
+        <div class="logout-wrapper">
+            <a href="/logout" class="logout-btn">로그아웃</a>
+        </div>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="top-header">
+            <div class="d-flex align-items-center pt-2">
+                <i class="bi bi-bell me-2 text-muted" style="font-size: 16px;"></i>
+                <span class="notice-text">현재 공지사항입니다. 오픈개발 준비중입니다.</span>
+            </div>
+            <div class="d-flex align-items-center notice-text">
+                <span class="me-4 text-muted" style="font-size: 11px;">2026-06-04</span>
+                <img src="https://flagcdn.com/24x18/kr.png" alt="KR" width="20" height="15" style="border:1px solid #eee; border-radius: 2px;">
+            </div>
+        </header>
+
+        {% block content %}
+        {% endblock %}
+        
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

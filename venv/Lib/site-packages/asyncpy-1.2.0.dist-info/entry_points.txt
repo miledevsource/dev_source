@@ -1,0 +1,3 @@
+[console_scripts]
+asyncpy = asyncpy.__init__:cli
+

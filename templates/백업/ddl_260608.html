@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .extract-container { background-color: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 900px; margin: 20px; }
+    .extract-container h2 { color: #333; border-bottom: 2px solid #d81b2f; padding-bottom: 10px; font-weight: 700; font-size: 20px; display: flex; justify-content: space-between; align-items: flex-end;}
+    
+    .form-group { display: flex; align-items: center; margin-bottom: 15px; }
+    .form-group label.title-label { width: 160px; font-weight: 600; font-size: 14px; color: #444; margin-bottom: 0; }
+    .form-group input[type="text"], .form-group input[type="password"] { flex: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; transition: border-color 0.15s; }
+    .form-group input:focus { border-color: #80bdff; outline: 0; }
+    .form-group input:disabled { background-color: #e9ecef; color: #6c757d; cursor: not-allowed; }
+    
+    .checkbox-list, .radio-group { display: flex; gap: 15px; flex: 1; flex-wrap: wrap; align-items: center; }
+    .checkbox-list label, .radio-group label { font-weight: normal; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+    
+    .btn-extract { background-color: #d81b2f; color: white; border: none; border-radius: 4px; padding: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; flex: 1; }
+    .btn-extract:hover { background-color: #b01525; }
+    .btn-extract:disabled { background-color: #e9ecef; color: #6c757d; cursor: not-allowed; }
+    
+    .btn-github { background-color: #24292f; }
+    .btn-github:hover { background-color: #000000; }
+
+    .log-area { background-color: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 5px; height: 350px; overflow-y: auto; font-family: Consolas, monospace; font-size: 13px; white-space: pre-wrap; word-wrap: break-word; margin-top: 10px; border: 1px solid #333; }
+    .info-text { font-size: 12px; color: #6c757d; margin-top: 5px; margin-left: 160px; }
+    
+    .env-notice { font-size: 13px; color: #28a745; font-weight: bold; display: none; background: #e8f5e9; padding: 8px 12px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #c8e6c9;}
+    
+    /* GitHub 전용 입력 영역 */
+    .github-section { background-color: #f6f8fa; border: 1px solid #d0d7de; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
+    .github-section .title-label { color: #24292f; width: 140px; }
+</style>
+
+<div class="extract-container">
+    <h2>
+        <span>📦 Oracle DDL 자동 추출기</span>
+    </h2>
+    <p style="font-size: 13px; color: #666; margin-bottom: 15px;">지정된 오라클 DB에 접속하여 원하는 객체를 .sql 파일로 추출합니다.</p>
+    
+    <div id="envNotice" class="env-notice">✅ .env 파일의 Oracle DB 접속 정보가 자동으로 적용되었습니다.</div>
+    
+    <div class="form-section">
+        <div class="form-group"><label class="title-label">👤 DB 접속 계정:</label><input type="text" id="dbUser" placeholder="예: iicu"></div>
+        <div class="form-group"><label class="title-label">🔑 DB 접속 비밀번호:</label><input type="password" id="dbPassword"></div>
+        <div class="form-group"><label class="title-label">🔗 DB DSN (접속정보):</label><input type="text" id="dbDsn" placeholder="IP:PORT/SID"></div>
+        <div class="form-group"><label class="title-label">🎯 추출 대상 계정명:</label><input type="text" id="targetSchema" placeholder="계정명"></div>
+
+        <div class="form-group" style="margin-top: 20px;">
+            <label class="title-label">💾 저장 방식:</label>
+            <div class="radio-group">
+                <label><input type="radio" name="saveMode" value="server" checked onchange="toggleSaveMode()"> 서버 폴더에 저장</label>
+                <label><input type="radio" name="saveMode" value="local" onchange="toggleSaveMode()"> 내 PC로 다운로드</label>
+            </div>
+        </div>
+        
+        <div class="form-group" id="outputDirGroup">
+            <label class="title-label">📂 저장할 서버 폴더:</label>
+            <input type="text" id="outputDir" value="C:\oracle_ddl_export">
+        </div>
+        <div class="info-text" id="outputDirInfo" style="margin-bottom: 20px;">※ 파일은 웹 서버가 실행 중인 PC의 해당 경로에 저장됩니다.</div>
+
+        <div id="githubGroup" class="github-section">
+            <div style="font-weight: bold; margin-bottom: 10px; font-size: 14px; color: #0969da;">🐙 GitHub 연동 설정 (GitHub 업로드 시에만 사용)</div>
+            <div class="form-group"><label class="title-label">🔑 Personal Token:</label><input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"></div>
+            <div class="form-group"><label class="title-label">📁 레포지토리:</label><input type="text" id="ghRepo" placeholder="예: username/my-repo-name"></div>
+            <div class="form-group"><label class="title-label">🌿 브랜치명:</label><input type="text" id="ghBranch" value="main"></div>
+            <div class="form-group"><label class="title-label">📂 업로드 경로:</label><input type="text" id="ghPath" value="oracle_ddl" placeholder="예: src/ddl (비워두면 최상단)"></div>
+        </div>
+
+        <div class="form-group" style="background-color: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #e9ecef;">
+            <label class="title-label">📌 추출 대상 객체:</label>
+            <div class="checkbox-list">
+                <label><input type="checkbox" name="objType" value="PACKAGE" checked> Package</label>
+                <label><input type="checkbox" name="objType" value="PROCEDURE" checked> Procedure</label>
+                <label><input type="checkbox" name="objType" value="FUNCTION" checked> Function</label>
+                <label><input type="checkbox" name="objType" value="VIEW" checked> View</label>
+                <label><input type="checkbox" name="objType" value="TABLE"> Table</label>                
+            </div>
+        </div>
+    </div>
+    
+    <div style="display: flex; gap: 15px; margin-top: 15px;">
+        <button id="btnStart" class="btn-extract" onclick="executeAction('extract')">🚀 DDL 추출 (서버/PC 저장)</button>
+        <button id="btnGithub" class="btn-extract btn-github" onclick="executeAction('github')">🐙 GitHub에 동기화 (Push)</button>
+    </div>
+    
+    <h5 style="margin-top: 30px; font-weight: bold; font-size: 15px; color: #333;">진행 상황 로그:</h5>
+    <div id="logArea" class="log-area">대기 중... 추출 또는 동기화 버튼을 눌러주세요.</div>
+</div>
+
+<script>
+    window.onload = async function() {
+        try {
+            const res = await fetch('/api/env/load');
+            const data = await res.json();
+            if (data.oracle && data.oracle.user && data.oracle.dsn) {
+                document.getElementById('dbUser').value = data.oracle.user;
+                document.getElementById('dbPassword').value = data.oracle.password;
+                document.getElementById('dbDsn').value = data.oracle.dsn;
+                document.getElementById('targetSchema').value = data.oracle.user;
+                document.getElementById('envNotice').style.display = 'block';
+            }
+        } catch (error) { console.warn(".env 파일 로드 실패", error); }
+    };
+
+    function toggleSaveMode() {
+        const mode = document.querySelector('input[name="saveMode"]:checked').value;
+        const dirInput = document.getElementById('outputDir');
+        const dirInfo = document.getElementById('outputDirInfo');
+        
+        if (mode === 'local') {
+            dirInput.disabled = true;
+            dirInfo.innerText = "※ 추출된 파일들을 하나의 .zip 파일로 압축하여 다운로드합니다.";
+        } else {
+            dirInput.disabled = false;
+            dirInfo.innerText = "※ 파일은 웹 서버가 실행 중인 PC의 해당 경로에 저장됩니다.";
+        }
+    }
+
+    // 🚀 눌린 버튼에 따라 동작을 분기하는 통합 함수
+    // 🚀 눌린 버튼에 따라 동작을 분기하는 통합 함수
+    // 🚀 버튼 동작 분기 함수
+    async function executeAction(actionType) {
+        const payload = {};
+        const logArea = document.getElementById('logArea');
+        const btnStart = document.getElementById('btnStart');
+        const btnGithub = document.getElementById('btnGithub');
+        
+        let targetApiUrl = ''; // 호출할 백엔드 주소
+
+        // 1) DDL 추출 버튼 클릭 시 (DB 접속 O)
+        if (actionType === 'extract') {
+            payload.user = document.getElementById('dbUser').value.trim();
+            payload.password = document.getElementById('dbPassword').value.trim();
+            payload.dsn = document.getElementById('dbDsn').value.trim();
+            payload.target = document.getElementById('targetSchema').value.trim();
+            payload.object_types = Array.from(document.querySelectorAll('input[name="objType"]:checked')).map(cb => cb.value);
+            payload.save_mode = document.querySelector('input[name="saveMode"]:checked').value;
+            payload.output_dir = document.getElementById('outputDir').value.trim();
+
+            if (!payload.user || !payload.password || !payload.dsn || !payload.target) return alert("DB 접속 정보를 모두 입력해주세요.");
+            if (payload.object_types.length === 0) return alert("최소 하나의 추출 대상 객체를 선택해주세요.");
+            if (payload.save_mode === 'server' && !payload.output_dir) return alert("저장할 서버 폴더 경로를 입력해주세요.");
+
+            targetApiUrl = '/api/extract/ddl';
+            logArea.innerText = `▶ [${payload.object_types.join(', ')}] 객체 추출 작업을 시작합니다...\n\n`;
+        } 
+        
+        // 2) 🚀 GitHub 동기화 버튼 클릭 시 (DB 접속 X, 폴더만 읽음)
+        else if (actionType === 'github') {
+            payload.output_dir = document.getElementById('outputDir').value.trim();
+            payload.target = document.getElementById('targetSchema').value.trim(); // 커밋 메시지용
+            
+            if (!payload.output_dir) return alert("읽어올 서버 폴더 경로를 입력해주세요.");
+
+            payload.github_config = {
+                token: document.getElementById('ghToken').value.trim(),
+                repo: document.getElementById('ghRepo').value.trim(),
+                branch: document.getElementById('ghBranch').value.trim() || 'main',
+                path: document.getElementById('ghPath').value.trim()
+            };
+            if (!payload.github_config.token || !payload.github_config.repo) {
+                return alert("GitHub 연동을 위해 Token과 레포지토리(username/repo)를 입력해주세요.");
+            }
+
+            targetApiUrl = '/api/extract/github_sync';
+            logArea.innerText = `▶ [${payload.output_dir}] 폴더의 파일들을 GitHub로 동기화합니다...\n\n`;
+        }
+
+        btnStart.disabled = true;
+        btnGithub.disabled = true;
+
+        try {
+            const response = await fetch(targetApiUrl, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+
+            if (response.ok) {
+                logArea.innerText += result.log;
+                
+                if (actionType === 'extract') {
+                    if (payload.save_mode === 'local' && result.download_url) {
+                        window.location.href = result.download_url;
+                        alert("✅ DDL 압축 파일 다운로드가 시작됩니다.");
+                    } else {
+                        alert("✅ 서버 폴더에 DDL 저장이 완료되었습니다.");
+                    }
+                } else if (actionType === 'github') {
+                    alert("🐙 서버 폴더의 파일이 GitHub에 성공적으로 동기화되었습니다!");
+                }
+            } else {
+                logArea.innerText += `\n❌ [오류 발생]\n${result.error || result.log}`;
+                // 🚀 알림창 문구를 명확하게 수정
+                alert("❌ 작업 실패!\n\n화면 맨 아래의 [검은색 진행 상황 로그] 창을 확인하시면 정확한 실패 원인을 알 수 있습니다.");
+            }
+        } catch (error) {
+            logArea.innerText += `\n❌ [통신 오류]\n${error.message}`;
+        } finally {
+            btnStart.disabled = false;
+            btnGithub.disabled = false;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+    }
+</script>
+{% endblock %}

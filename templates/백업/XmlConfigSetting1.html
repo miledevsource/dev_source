@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Config API 관리자 화면</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; margin: 20px; background-color: #f4f7f6; }
+        .container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 1000px; }
+        h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .flex-container { display: flex; gap: 20px; margin-top: 15px; }
+        fieldset { flex: 1; border: 1px solid #ccc; border-radius: 5px; padding: 15px; background-color: #fafafa; }
+        legend { font-weight: bold; color: #007bff; background: white; padding: 0 5px; border: 1px solid #ccc; border-radius: 3px; }
+        .input-group { margin-bottom: 10px; display: flex; align-items: center; }
+        .input-group label { width: 130px; font-weight: bold; font-size: 13px; color: #555; }
+        .input-group input { flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+        .top-section { margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
+        
+        /* 버튼 스타일 분리 */
+        .btn { padding: 10px 20px; color: white; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; cursor: pointer; }
+        .btn-load { background-color: #17a2b8; } /* 파란색 계열 */
+        .btn-load:hover { background-color: #138496; }
+        .btn-save { background-color: #28a745; width: 100%; margin-top: 20px;} /* 녹색 계열 */
+        .btn-save:hover { background-color: #218838; }
+        
+        pre { background:#2d2d2d; color: #00ff00; padding:15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🛠️ 관리자 XML 설정 업데이트 & 조회</h2>
+        
+        <div class="top-section">
+            <label style="font-weight: bold;">🏥 대상 병원 코드:</label>
+            <input type="text" id="hospitalCode" value="01" style="padding: 5px; width: 100px; text-align: center;">
+            <button class="btn btn-load" onclick="loadFromDB()">DB에서 불러오기 (GET)</button>
+        </div>
+        
+        <div class="flex-container">
+            <fieldset>
+                <legend>권역병원 (ConnectionAddress)</legend>
+                <div class="input-group"><label>ACM</label><input type="text" id="c_ACM"></div>
+                <div class="input-group"><label>EMS</label><input type="text" id="c_EMS"></div>
+                <div class="input-group"><label>RRS</label><input type="text" id="c_RRS"></div>
+                <div class="input-group"><label>EMSICU</label><input type="text" id="c_EMSICU"></div>
+                <div class="input-group"><label>DASHBOARD</label><input type="text" id="c_DASHBOARD"></div>
+                <div class="input-group"><label>CCTV</label><input type="text" id="c_CCTV"></div>
+                <div class="input-group"><label>WAVEFORMS</label><input type="text" id="c_WAVEFORMS"></div>
+                <div class="input-group"><label>WAVEFORMS_URL</label><input type="text" id="c_WAVEFORMS_URL"></div>
+            </fieldset>
+
+            <fieldset>
+                <legend>지역병원 (LOCALConnectionAddress)</legend>
+                <div class="input-group"><label>ACM</label><input type="text" id="l_ACM"></div>
+                <div class="input-group"><label>EMS</label><input type="text" id="l_EMS"></div>
+                <div class="input-group"><label>RRS</label><input type="text" id="l_RRS"></div>
+                <div class="input-group"><label>EMSICU</label><input type="text" id="l_EMSICU"></div>
+                <div class="input-group"><label>DASHBOARD</label><input type="text" id="l_DASHBOARD"></div>
+                <div class="input-group"><label>CCTV</label><input type="text" id="l_CCTV"></div>
+                <div class="input-group"><label>WAVEFORMS</label><input type="text" id="l_WAVEFORMS"></div>
+                <div class="input-group"><label>WAVEFORMS_URL</label><input type="text" id="l_WAVEFORMS_URL"></div>
+            </fieldset>
+        </div>
+        
+        <button class="btn btn-save" onclick="sendPostRequest()">DB에 설정 저장하기 (POST)</button>
+        
+        <h3 style="margin-top: 30px;">서버 응답 결과:</h3>
+        <pre id="result">여기에 처리 결과가 표시됩니다.</pre>
+    </div>
+
+    <script>
+        // 공통 변수: API 기본 주소
+        //const BASE_URL = "http://127.0.0.1:8888/api/config";
+        const BASE_URL = "{{ api_base_url }}";
+
+        console.log("현재 설정된 API 주소:", BASE_URL); // 확인용 로그
+
+        // ==========================================
+        // 1. [새로운 기능] DB에서 불러오기 (GET)
+        // ==========================================
+        async function loadFromDB() {
+            const hospitalCode = document.getElementById('hospitalCode').value;
+            const resultBox = document.getElementById('result');
+            
+            if(!hospitalCode) {
+                alert("병원 코드를 입력하세요.");
+                return;
+            }
+
+            try {
+                resultBox.innerText = "서버에서 데이터를 불러오는 중...";
+                const response = await fetch(`${BASE_URL}/sync/${hospitalCode}`, { method: 'GET' });
+                
+                if (!response.ok) {
+                    if(response.status === 404) throw new Error("해당 병원 코드의 데이터가 DB에 없습니다.");
+                    throw new Error("서버 오류 발생");
+                }
+                
+                const data = await response.json();
+                resultBox.innerText = `✅ 불러오기 성공! (현재 DB 버전: v${data.version})\n\n${data.xml_data}`;
+                
+                // [핵심] XML 문자열을 파싱하여 HTML 입력칸에 채워 넣기
+                parseXmlAndFillForm(data.xml_data);
+
+            } catch (error) {
+                resultBox.innerText = "❌ 에러 발생: " + error.message;
+            }
+        }
+
+        // XML 파싱 함수
+        function parseXmlAndFillForm(xmlString) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+
+            // 1. 권역병원 (ConnectionAddress) 데이터 채우기
+            const connNode = xmlDoc.querySelector("ConnectionAddress");
+            if (connNode) {
+                document.getElementById('c_ACM').value = connNode.querySelector("ACM")?.textContent || "";
+                document.getElementById('c_EMS').value = connNode.querySelector("EMS")?.textContent || "";
+                document.getElementById('c_RRS').value = connNode.querySelector("RRS")?.textContent || "";
+                document.getElementById('c_EMSICU').value = connNode.querySelector("EMSICU")?.textContent || "";
+                document.getElementById('c_DASHBOARD').value = connNode.querySelector("DASHBOARD")?.textContent || "";
+                document.getElementById('c_CCTV').value = connNode.querySelector("CCTV")?.textContent || "";
+                document.getElementById('c_WAVEFORMS').value = connNode.querySelector("WAVEFORMS")?.textContent || "";
+                document.getElementById('c_WAVEFORMS_URL').value = connNode.querySelector("WAVEFORMS_URL")?.textContent || "";
+            }
+
+            // 2. 지역병원 (LOCALConnectionAddress) 데이터 채우기
+            const localNode = xmlDoc.querySelector("LOCALConnectionAddress");
+            if (localNode) {
+                document.getElementById('l_ACM').value = localNode.querySelector("ACM")?.textContent || "";
+                document.getElementById('l_EMS').value = localNode.querySelector("EMS")?.textContent || "";
+                document.getElementById('l_RRS').value = localNode.querySelector("RRS")?.textContent || "";
+                document.getElementById('l_EMSICU').value = localNode.querySelector("EMSICU")?.textContent || "";
+                document.getElementById('l_DASHBOARD').value = localNode.querySelector("DASHBOARD")?.textContent || "";
+                document.getElementById('l_CCTV').value = localNode.querySelector("CCTV")?.textContent || "";
+                document.getElementById('l_WAVEFORMS').value = localNode.querySelector("WAVEFORMS")?.textContent || "";
+                document.getElementById('l_WAVEFORMS_URL').value = localNode.querySelector("WAVEFORMS_URL")?.textContent || "";
+            }
+        }
+
+
+        // ==========================================
+        // 2. [기존 기능] DB에 저장하기 (POST)
+        // ==========================================
+        function generateXmlString() {
+            return `
+<Config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <ConnectionAddress>
+    <ACM>${document.getElementById('c_ACM').value}</ACM>
+    <EMS>${document.getElementById('c_EMS').value}</EMS>
+    <RRS>${document.getElementById('c_RRS').value}</RRS>
+    <EMSICU>${document.getElementById('c_EMSICU').value}</EMSICU>
+    <DASHBOARD>${document.getElementById('c_DASHBOARD').value}</DASHBOARD>
+    <CCTV>${document.getElementById('c_CCTV').value}</CCTV>
+    <WAVEFORMS>${document.getElementById('c_WAVEFORMS').value}</WAVEFORMS>
+    <WAVEFORMS_URL>${document.getElementById('c_WAVEFORMS_URL').value}</WAVEFORMS_URL>
+  </ConnectionAddress>
+  <LOCALConnectionAddress>
+    <ACM>${document.getElementById('l_ACM').value}</ACM>
+    <EMS>${document.getElementById('l_EMS').value}</EMS>
+    <RRS>${document.getElementById('l_RRS').value}</RRS>
+    <EMSICU>${document.getElementById('l_EMSICU').value}</EMSICU>
+    <DASHBOARD>${document.getElementById('l_DASHBOARD').value}</DASHBOARD>
+    <CCTV>${document.getElementById('l_CCTV').value}</CCTV>
+    <WAVEFORMS>${document.getElementById('l_WAVEFORMS').value}</WAVEFORMS>
+    <WAVEFORMS_URL>${document.getElementById('l_WAVEFORMS_URL').value}</WAVEFORMS_URL>
+  </LOCALConnectionAddress>
+</Config>`.trim();
+        }
+
+        async function sendPostRequest() {
+            const hospitalCode = document.getElementById('hospitalCode').value;
+            const resultBox = document.getElementById('result');
+            
+            if(!hospitalCode) {
+                alert("병원 코드를 입력하세요.");
+                return;
+            }
+
+            const finalXmlData = generateXmlString();
+            
+            try {
+                resultBox.innerText = "서버로 저장 중입니다...";
+                
+                const response = await fetch(`${BASE_URL}/admin/${hospitalCode}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ xml_data: finalXmlData })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultBox.innerText = `✅ 저장 완료! (업데이트 된 버전: v${data.new_version})\n\n서버 응답:\n` + JSON.stringify(data, null, 2);
+                } else {
+                    resultBox.innerText = "❌ 저장 실패:\n" + JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                resultBox.innerText = "❌ 에러 발생: " + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
+{% endblock %}

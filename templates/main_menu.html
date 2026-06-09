@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>메인 메뉴</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: #f4f7f6;
+            margin: 0; padding: 20px;
+            display: flex; justify-content: center;
+        }
+        .menu-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 500px;
+            text-align: center;
+        }
+        h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .menu-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 30px;
+        }
+        .menu-list li {
+            margin-bottom: 15px;
+        }
+        .menu-list a {
+            display: block;
+            padding: 15px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            transition: 0.2s;
+        }
+        .menu-list a:hover { background-color: #0056b3; }
+        .logout-btn { background-color: #dc3545 !important; }
+        .logout-btn:hover { background-color: #c82333 !important; }
+    </style>
+</head>
+<body>
+    <div class="menu-container">
+        <h2>📊 EICU 통합 관리 시스템</h2>
+        <p style="color: #666; font-weight: bold;">환영합니다, {{ session.user_id }} 관리자님!</p>
+        
+        <ul class="menu-list">
+            <li><a href="/setting">⚙️ EICU 환경설정 (XML Config)</a></li>
+            
+            <li><a href="/logout" class="logout-btn">🚪 로그아웃</a></li>
+        </ul>
+    </div>
+</body>
+</html>

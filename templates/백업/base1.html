@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>e-ICU 환경설정</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Noto Sans KR', sans-serif; 
+            background-color: #f4f5f7; 
+            overflow-x: hidden; 
+            color: #333;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar { 
+            width: 260px; 
+            background-color: #2b2c36; 
+            color: #fff; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            position: fixed; 
+            left: 0; 
+            top: 0; 
+            z-index: 1000;
+        }
+        .sidebar .logo-area { 
+            padding: 30px 0; 
+            text-align: center; 
+            font-size: 24px; 
+            font-weight: 900; 
+            letter-spacing: 1px; 
+        }
+        .sidebar .menu-label { 
+            font-size: 11px; 
+            color: #d81b2f; 
+            padding: 10px 25px; 
+            font-weight: bold; 
+        }
+        .sidebar .nav-link { 
+            color: #a0a2ac; 
+            padding: 14px 25px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            border-radius: 0; 
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .sidebar .nav-link i.icon-left { 
+            font-size: 1.1rem; 
+            width: 24px; 
+            text-align: left; 
+        }
+        .sidebar .nav-link:hover { 
+            color: #fff; 
+            background-color: rgba(255,255,255,0.05); 
+        }
+        .sidebar .nav-link.active { 
+            color: #fff; 
+            background-color: #d81b2f; 
+            border-radius: 4px;
+            margin: 0 10px;
+            padding: 14px 15px;
+        }
+        .sidebar .logout-btn-wrapper { 
+            margin-top: auto; 
+            padding: 30px 20px; 
+        }
+        .sidebar .logout-btn { 
+            background-color: #3f404a; 
+            color: #a0a2ac; 
+            border: none; 
+            border-radius: 25px; 
+            padding: 12px; 
+            width: 100%; 
+            font-size: 14px; 
+            transition: 0.2s;
+        }
+        .sidebar .logout-btn:hover {
+            background-color: #50525d;
+            color: #fff;
+        }
+        
+        /* Main Content Styles */
+        .main-wrapper { 
+            margin-left: 260px; 
+            width: calc(100% - 260px); 
+        }
+        .top-header { 
+            height: 60px; 
+            background-color: #f4f5f7; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 0 30px; 
+        }
+        .top-header .notice-text { 
+            font-size: 13px; 
+            color: #666; 
+        }
+        .sub-header {
+            padding: 0 30px;
+            display: flex;
+            align-items: center;
+        }
+        .btn-update {
+            background-color: #c4c5cc;
+            color: #fff;
+            font-size: 11px;
+            border-radius: 15px;
+            padding: 3px 12px;
+            margin-right: 10px;
+            border: none;
+        }
+
+        .dashboard-content { 
+            padding: 20px 30px; 
+        }
+        .card { 
+            border: none; 
+            border-radius: 4px; 
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05); 
+            margin-bottom: 20px; 
+            background-color: #fff;
+            height: 100%;
+        }
+        .card-header-custom {
+            padding: 15px 20px 10px 20px;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .card-header-custom i {
+            margin-right: 8px;
+            color: #d81b2f;
+            font-size: 16px;
+        }
+        .card-body-custom {
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    
+    <aside class="sidebar">
+        <div class="logo-area">e-ICU 환경설정</div>
+        <div class="menu-label">MENU</div>
+        <nav class="nav flex-column">
+            <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">
+                <div class="d-flex align-items-center"><i class="bi bi-house-door-fill icon-left"></i> 대시보드</div>
+                <i class="bi bi-chevron-right" style="font-size:12px;"></i>
+            </a>
+            <a class="nav-link {% if request.path == '/xml-config' %}active{% endif %}" href="/xml-config">
+                <div class="d-flex align-items-center"><i class="bi bi-gear-fill icon-left"></i> XML Config 설정</div>
+                <i class="bi bi-chevron-right" style="font-size:12px;"></i>
+            </a>
+            <a class="nav-link {% if request.path == '/ddl-extract' %}active{% endif %}" href="/ddl-extract">
+                <div class="d-flex align-items-center"><i class="bi bi-gift-fill icon-left"></i> DDL 추출</div>
+                <i class="bi bi-chevron-right" style="font-size:12px;"></i>
+            </a>
+        </nav>
+        <div class="logout-btn-wrapper">
+            <button class="logout-btn">로그아웃</button>
+        </div>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="top-header">
+            <div class="d-flex align-items-center pt-2">
+                <i class="bi bi-bell me-2 text-muted" style="font-size: 16px;"></i>
+                <span class="notice-text">현재 공지사항입니다. 오픈개발 준비중입니다.</span>
+            </div>
+            <div class="d-flex align-items-center notice-text">
+                <span class="me-4 text-muted" style="font-size: 11px;">2026-06-04</span>
+                <img src="https://flagcdn.com/24x18/kr.png" alt="KR" width="20" height="15" style="border:1px solid #eee; border-radius: 2px;">
+            </div>
+        </header>
+
+        {% block content %}
+        {% endblock %}
+        
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

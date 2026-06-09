@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .config-container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 1000px; margin: 20px; }
+    .config-container h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+    .flex-container { display: flex; gap: 20px; margin-top: 15px; }
+    fieldset { flex: 1; border: 1px solid #ccc; border-radius: 5px; padding: 15px; background-color: #fafafa; }
+    
+    /* 🚀 Legend 영역에 추가 버튼 배치 */
+    legend { font-weight: bold; color: #007bff; background: white; padding: 0 10px; border: 1px solid #ccc; border-radius: 3px; display: flex; align-items: center; gap: 10px; }
+    
+    /* 🚀 동적 입력 그룹 스타일 */
+    .dynamic-row { display: flex; align-items: center; margin-bottom: 10px; gap: 5px; }
+    .dynamic-row input.tag-key { width: 120px; font-weight: bold; background-color: #e9ecef; border: 1px solid #ccc; border-radius: 4px; padding: 6px; font-size: 13px; text-align: center; }
+    .dynamic-row input.tag-value { flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+    
+    .top-section { margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
+    
+    /* 버튼 스타일 */
+    .btn-custom { padding: 8px 20px; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; }
+    .btn-load { background-color: #17a2b8; } 
+    .btn-load:hover { background-color: #138496; }
+    .btn-save { background-color: #28a745; width: 100%; margin-top: 20px; padding: 12px;} 
+    .btn-save:hover { background-color: #218838; }
+    
+    /* 추가/삭제 미니 버튼 */
+    .btn-add { background-color: #007bff; color: white; border: none; border-radius: 3px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
+    .btn-add:hover { background-color: #0056b3; }
+    .btn-remove { background-color: #dc3545; color: white; border: none; border-radius: 3px; padding: 5px 10px; font-size: 12px; cursor: pointer; }
+    .btn-remove:hover { background-color: #c82333; }
+    
+    .result-pre { background:#2d2d2d; color: #00ff00; padding:15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; font-family: Consolas, monospace; font-size: 13px;}
+</style>
+
+<div class="config-container">
+    <h2>🛠️ 관리자 XML 설정 업데이트 & 조회</h2>
+    
+    <div class="top-section">
+        <label style="font-weight: bold; font-size: 14px;">🏥 대상 병원 코드:</label>
+        <input type="text" id="hospitalCode" value="01" style="padding: 6px; width: 100px; text-align: center; border: 1px solid #ccc; border-radius: 4px;">
+        <button class="btn-custom btn-load" onclick="loadFromDB()">DB에서 불러오기 (GET)</button>
+    </div>
+    
+    <div class="flex-container">
+        <fieldset>
+            <legend>
+                권역병원 (ConnectionAddress)
+                <button class="btn-add" onclick="addRow('conn-list', '', '')">➕ 항목 추가</button>
+            </legend>
+            <div id="conn-list">
+                </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>
+                지역병원 (LOCALConnectionAddress)
+                <button class="btn-add" onclick="addRow('local-list', '', '')">➕ 항목 추가</button>
+            </legend>
+            <div id="local-list">
+                </div>
+        </fieldset>
+    </div>
+    
+    <button class="btn-custom btn-save" onclick="sendPostRequest()">DB에 설정 저장하기 (POST)</button>
+    
+    <h5 style="margin-top: 30px; font-weight: bold;">서버 응답 결과:</h5>
+    <pre id="result" class="result-pre">여기에 처리 결과가 표시됩니다.</pre>
+</div>
+
+<script>
+    const BASE_URL = "{{ api_base_url }}";
+
+    // ==========================================
+    // 🚀 [신규 기능] 입력 행(Row) 동적 추가
+    // ==========================================
+    function addRow(containerId, keyName, valueContent) {
+        const container = document.getElementById(containerId);
+        
+        // 새로운 행을 감싸는 div 생성
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'dynamic-row';
+        
+        // 1. 태그명 (Key) 입력창
+        const keyInput = document.createElement('input');
+        keyInput.type = 'text';
+        keyInput.className = 'tag-key';
+        keyInput.placeholder = '태그명 (예: ACM)';
+        keyInput.value = keyName;
+        
+        // 2. 값 (Value) 입력창
+        const valInput = document.createElement('input');
+        valInput.type = 'text';
+        valInput.className = 'tag-value';
+        valInput.placeholder = '설정값';
+        valInput.value = valueContent;
+        
+        // 3. 삭제 버튼
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn-remove';
+        removeBtn.innerText = '❌';
+        removeBtn.onclick = function() {
+            container.removeChild(rowDiv);
+        };
+        
+        rowDiv.appendChild(keyInput);
+        rowDiv.appendChild(valInput);
+        rowDiv.appendChild(removeBtn);
+        
+        container.appendChild(rowDiv);
+    }
+
+    // 기본 항목 세팅 (화면 최초 로드 시 빈칸 방지용)
+    // window.onload = function() {
+    //     const defaultTags = ['ACM', 'EMS', 'RRS', 'EMSICU', 'DASHBOARD', 'CCTV', 'WAVEFORMS', 'WAVEFORMS_URL'];
+    //     defaultTags.forEach(tag => {
+    //         addRow('conn-list', tag, '');
+    //         addRow('local-list', tag, '');
+    //     });
+    // };
+    
+    // 최초 로드 시 빈칸 하나씩만 생성
+    window.onload = function() {
+        addRow('conn-list', '', '');
+        addRow('local-list', '', '');
+    };
+
+    // ==========================================
+    // 1. DB에서 불러오기 (GET)
+    // ==========================================
+    async function loadFromDB() {
+        const hospitalCode = document.getElementById('hospitalCode').value;
+        const resultBox = document.getElementById('result');
+        
+        if(!hospitalCode) return alert("병원 코드를 입력하세요.");
+
+        try {
+            resultBox.innerText = "서버에서 데이터를 불러오는 중...";
+            const response = await fetch(`${BASE_URL}/sync/${hospitalCode}`, { method: 'GET' });
+            
+            if (!response.ok) throw new Error(response.status === 404 ? "데이터가 없습니다." : "서버 오류");
+            
+            const data = await response.json();
+            resultBox.innerText = `✅ 불러오기 성공!\n\n${data.xml_data}`;
+            
+            parseXmlAndFillForm(data.xml_data);
+        } catch (error) {
+            resultBox.innerText = "❌ " + error.message;
+        }
+    }
+
+    // 🚀 [수정됨] XML 파싱 후 동적 리스트 생성
+    function parseXmlAndFillForm(xmlString) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+
+        // 기존 리스트 초기화 (비우기)
+        document.getElementById('conn-list').innerHTML = '';
+        document.getElementById('local-list').innerHTML = '';
+
+        // 권역병원 파싱
+        const connNode = xmlDoc.querySelector("ConnectionAddress");
+        if (connNode) {
+            Array.from(connNode.children).forEach(child => {
+                addRow('conn-list', child.tagName, child.textContent);
+            });
+        }
+
+        // 지역병원 파싱
+        const localNode = xmlDoc.querySelector("LOCALConnectionAddress");
+        if (localNode) {
+            Array.from(localNode.children).forEach(child => {
+                addRow('local-list', child.tagName, child.textContent);
+            });
+        }
+    }
+
+    // ==========================================
+    // 2. DB에 저장하기 (POST)
+    // ==========================================
+    
+    // 🚀 [신규 기능] 특정 컨테이너의 입력값들을 모아 XML 노드 문자열로 조립
+    function buildSectionXml(containerId, sectionName) {
+        let xml = `  <${sectionName}>\n`;
+        const rows = document.getElementById(containerId).querySelectorAll('.dynamic-row');
+        
+        rows.forEach(row => {
+            const key = row.querySelector('.tag-key').value.trim();
+            const val = row.querySelector('.tag-value').value.trim();
+            
+            // 태그명이 비어있지 않은 경우에만 추가
+            if (key) {
+                xml += `    <${key}>${val}</${key}>\n`;
+            }
+        });
+        
+        xml += `  </${sectionName}>\n`;
+        return xml;
+    }
+
+    // 🚀 [수정됨] 전체 XML 문자열 조립
+    function generateXmlString() {
+        let finalXml = `<Config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n`;
+        finalXml += buildSectionXml('conn-list', 'ConnectionAddress');
+        finalXml += buildSectionXml('local-list', 'LOCALConnectionAddress');
+        finalXml += `</Config>`;
+        return finalXml;
+    }
+
+    async function sendPostRequest() {
+        const hospitalCode = document.getElementById('hospitalCode').value;
+        const resultBox = document.getElementById('result');
+        
+        if(!hospitalCode) return alert("병원 코드를 입력하세요.");
+
+        const finalXmlData = generateXmlString();
+        
+        try {
+            resultBox.innerText = "저장 중...\n\n[생성된 XML 확인]\n" + finalXmlData;
+            
+            const response = await fetch(`${BASE_URL}/admin/${hospitalCode}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ xml_data: finalXmlData })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                resultBox.innerText = `✅ 저장 완료! (v${data.new_version})\n\n${finalXmlData}`;
+            } else {
+                resultBox.innerText = "❌ 저장 실패:\n" + JSON.stringify(data, null, 2);
+            }
+        } catch (error) {
+            resultBox.innerText = "❌ 에러: " + error.message;
+        }
+    }
+</script>
+{% endblock %}

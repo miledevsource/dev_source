@@ -1,0 +1,34 @@
+<h2>📦 오라클 소스 GitHub 자동 동기화</h2>
+
+<label>객체 타입:</label>
+<select id="objType">
+    <option value="PROCEDURE">PROCEDURE</option>
+    <option value="PACKAGE">PACKAGE</option>
+    <option value="PACKAGE BODY">PACKAGE BODY</option>
+    <option value="FUNCTION">FUNCTION</option>
+</select><br><br>
+
+<label>객체 이름 (영문):</label>
+<input type="text" id="objName" placeholder="예: SP_GET_PATIENT"><br><br>
+
+<button onclick="syncToGithub()">GitHub로 동기화</button>
+<pre id="resultBox"></pre>
+
+<script>
+    async function syncToGithub() {
+        const objType = document.getElementById('objType').value;
+        const objName = document.getElementById('objName').value;
+        const resultBox = document.getElementById('resultBox');
+        
+        resultBox.innerText = "오라클 조회 및 GitHub 업로드 중...";
+        
+        const response = await fetch("http://127.0.0.1:8888/api/backup/oracle", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ object_type: objType, object_name: objName })
+        });
+        
+        const data = await response.json();
+        resultBox.innerText = JSON.stringify(data, null, 2);
+    }
+</script>

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Noto Sans KR', sans-serif; 
+            background-color: #f4f5f7; 
+            overflow-x: hidden; 
+            color: #333;
+        }
+        
+        /* 1. Sidebar Styles */
+        .sidebar { 
+            width: 260px; 
+            background-color: #2b2c36; 
+            color: #fff; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            position: fixed; 
+            left: 0; 
+            top: 0; 
+            z-index: 1000;
+        }
+        .sidebar .logo-area { 
+            padding: 30px 0; 
+            text-align: center; 
+            font-size: 28px; 
+            font-weight: 900; 
+            letter-spacing: 2px; 
+        }
+        .sidebar .menu-label { 
+            font-size: 11px; 
+            color: #d81b2f; 
+            padding: 10px 25px; 
+            font-weight: bold; 
+        }
+        .sidebar .nav-link { 
+            color: #a0a2ac; 
+            padding: 14px 25px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            border-radius: 0; 
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .sidebar .nav-link i.icon-left { 
+            font-size: 1.1rem; 
+            width: 24px; 
+            text-align: left; 
+        }
+        .sidebar .nav-link:hover { 
+            color: #fff; 
+            background-color: rgba(255,255,255,0.05); 
+        }
+        .sidebar .nav-link.active { 
+            color: #fff; 
+            background-color: #d81b2f; 
+            border-radius: 4px;
+            margin: 0 10px;
+            padding: 14px 15px;
+        }
+        .sidebar .logout-btn-wrapper { 
+            margin-top: auto; 
+            padding: 30px 20px; 
+        }
+        .sidebar .logout-btn { 
+            background-color: #3f404a; 
+            color: #a0a2ac; 
+            border: none; 
+            border-radius: 25px; 
+            padding: 12px; 
+            width: 100%; 
+            font-size: 14px; 
+            transition: 0.2s;
+        }
+        .sidebar .logout-btn:hover {
+            background-color: #50525d;
+            color: #fff;
+        }
+        
+        /* 2. Main Content Styles */
+        .main-wrapper { 
+            margin-left: 260px; 
+            width: calc(100% - 260px); 
+        }
+        .top-header { 
+            height: 60px; 
+            background-color: #f4f5f7; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 0 30px; 
+        }
+        .top-header .notice-text { 
+            font-size: 13px; 
+            color: #666; 
+        }
+        .sub-header {
+            padding: 0 30px;
+            display: flex;
+            align-items: center;
+        }
+        .btn-update {
+            background-color: #c4c5cc;
+            color: #fff;
+            font-size: 11px;
+            border-radius: 15px;
+            padding: 3px 12px;
+            margin-right: 10px;
+            border: none;
+        }
+
+        .dashboard-content { 
+            padding: 20px 30px; 
+        }
+        .card { 
+            border: none; 
+            border-radius: 4px; 
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05); 
+            margin-bottom: 20px; 
+            background-color: #fff;
+            height: 100%;
+        }
+        .card-header-custom {
+            padding: 15px 20px 10px 20px;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .card-header-custom i {
+            margin-right: 8px;
+            color: #d81b2f;
+            font-size: 16px;
+        }
+        .card-body-custom {
+            padding: 20px;
+        }
+
+        /* Card Text Utilities */
+        .text-label { font-size: 12px; color: #777; font-weight: 500; }
+        .text-value { font-size: 16px; font-weight: 700; color: #111; }
+        .text-value-lg { font-size: 22px; font-weight: 700; color: #111; }
+
+        /* Donut Chart (CSS Only) */
+        .chart-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+        }
+        .donut-chart { 
+            width: 140px; 
+            height: 140px; 
+            border-radius: 50%; 
+            background: conic-gradient(#d81b2f 0% 50%, #f0f0f0 50% 100%); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .donut-inner { 
+            width: 110px; 
+            height: 110px; 
+            border-radius: 50%; 
+            background-color: #fff; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .donut-label { font-size: 11px; color: #d81b2f; font-weight: bold; background: #fbe8ea; padding: 2px 8px; border-radius: 10px; margin-bottom: 5px; }
+        .donut-value { font-size: 24px; font-weight: 900; color: #111; }
+        .chart-legend .legend-item { display: flex; align-items: center; margin-bottom: 15px; font-size: 12px; color: #555; }
+        .legend-color { width: 12px; height: 4px; border-radius: 2px; margin-right: 8px; }
+        .legend-val { font-weight: bold; color: #111; display: block; margin-top: 2px; font-size: 14px;}
+
+        /* Table Card */
+        .tab-buttons {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        .tab-btn {
+            border: 1px solid #ddd;
+            background: #fff;
+            color: #666;
+            padding: 5px 15px;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+        .tab-btn.active {
+            background: #d81b2f;
+            color: #fff;
+            border-color: #d81b2f;
+        }
+        .custom-table {
+            width: 100%;
+            text-align: center;
+            font-size: 13px;
+        }
+        .custom-table th {
+            background-color: #f8f9fa;
+            padding: 12px;
+            font-weight: 500;
+            color: #555;
+            border-top: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+        }
+        .custom-table td {
+            padding: 15px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+        .btn-outline-info {
+            font-size: 11px;
+            padding: 4px 15px;
+            border-radius: 15px;
+            color: #0d6efd;
+            border-color: #b6d4fe;
+            background-color: #f1f7ff;
+        }
+
+        /* Notice List */
+        .notice-card {
+            border: 1px solid #eaeaea;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: #444;
+        }
+        .notice-card .date {
+            display: block;
+            font-size: 11px;
+            color: #999;
+            margin-top: 8px;
+        }
+
+        /* Utilities */
+        .btn-dark-custom { background-color: #1a1a1a; color: #fff; border-radius: 4px; font-size: 13px; padding: 10px; width: 100%; }
+        .btn-outline-red { border: 1px solid #d81b2f; color: #d81b2f; font-size: 11px; padding: 2px 10px; border-radius: 12px; background: #fff;}
+        .empty-placeholder { color: #ccc; font-size: 24px; font-weight: 100; display: flex; align-items: center; justify-content: center; height: 100%; }
+    </style>
+</head>
+<body>
+    
+    <!-- Sidebar Left -->
+    <aside class="sidebar">
+        <div class="logo-area">EICU 환경설정</div>
+        <div class="menu-label">MENU</div>
+        <nav class="nav flex-column">
+            <a class="nav-link active" href="#"><div class="d-flex align-items-center"><i class="bi bi-house-door-fill icon-left"></i>XML Config 설정</div> <i class="bi bi-chevron-right" style="font-size:12px;"></i></a>
+            <a class="nav-link" href="#"><div class="d-flex align-items-center"><i class="bi bi-gift-fill icon-left"></i>DDL 추출</div> <i class="bi bi-chevron-right" style="font-size:12px;"></i></a>
+            <a class="nav-link" href="#"><div class="d-flex align-items-center"><i class="bi bi-diagram-3-fill icon-left"></i> MENU</div> <i class="bi bi-chevron-down" style="font-size:12px;"></i></a>
+            <a class="nav-link" href="#"><div class="d-flex align-items-center"><i class="bi bi-folder-fill icon-left"></i> MENU</div> <i class="bi bi-chevron-right" style="font-size:12px;"></i></a>
+            <a class="nav-link" href="#"><div class="d-flex align-items-center"><i class="bi bi-receipt icon-left"></i> MENU</div> <i class="bi bi-chevron-down" style="font-size:12px;"></i></a>
+        </nav>
+        <div class="logout-btn-wrapper">
+            <button class="logout-btn">로그아웃</button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="d-flex align-items-center pt-2">
+                <i class="bi bi-bell me-2 text-muted" style="font-size: 16px;"></i>
+                <span class="notice-text">현재 공지사항입니다. 오픈개발 준비중입니다.</span>
+            </div>
+            <div class="d-flex align-items-center notice-text">
+                <span class="me-4 text-muted" style="font-size: 11px;">2024-08-23</span>
+                <img src="https://flagcdn.com/24x18/kr.png" alt="KR" width="20" height="15" style="border:1px solid #eee; border-radius: 2px;">
+            </div>
+        </header>
+
+        <!-- Sub Header Date Info -->
+        <div class="sub-header mb-3">
+            <button class="btn-update">TEXT</button>
+            <span style="font-size: 12px; color: #888;">Update 0000.00.00 00:00:00</span>
+        </div>
+
+        <!-- Dashboard Widgets -->
+        <div class="dashboard-content">
+            
+            <!-- Row 1 -->
+            <div class="row g-3 mb-3">
+                <!-- Card 1 -->
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-header-custom"><i class="bi bi-calculator"></i> TEXT</div>
+                        <div class="card-body-custom">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="text-label">TEXT</span>
+                                <span class="text-value-lg">₩ 3,300,000</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-label">TEXT</span>
+                                <span class="text-value">₩ 0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Card 2 -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header-custom"><i class="bi bi-bar-chart-fill" style="color:#dca236;"></i> TEXT</div>
+                        <div class="card-body-custom d-flex align-items-center justify-content-between h-100 pb-4">
+                            <div>
+                                <span class="text-label me-3">TEXT</span>
+                                <span class="text-value-lg">₩ 0</span>
+                            </div>
+                            <div>
+                                <span class="text-label me-3">TEXT</span>
+                                <span class="text-value-lg">₩ 0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Card 3 -->
+                <div class="col-md-2">
+                    <div class="card">
+                        <div class="card-header-custom"><i class="bi bi-search" style="color:#333;"></i> TEXT</div>
+                        <div class="card-body-custom p-3 pt-2">
+                            <div class="d-flex justify-content-between mb-2"><span class="text-label">TEXT</span><span class="text-value text-end" style="font-size:14px;">₩ 200,000</span></div>
+                            <div class="d-flex justify-content-between mb-2"><span class="text-label">TEXT</span><span class="text-value text-end" style="font-size:14px;">₩ 100,000</span></div>
+                            <div class="d-flex justify-content-between"><span class="text-label">TEXT</span><span class="text-value text-end" style="font-size:14px;">₩ 100,000</span></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Card 4 -->
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-header-custom"><i class="bi bi-link-45deg" style="color:#0d6efd;"></i> TEXT</div>
+                        <div class="card-body-custom d-flex flex-column justify-content-center">
+                            <div class="text-center text-label mb-3 mt-1">TEXT LINK</div>
+                            <button class="btn-dark-custom">TEXT</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2 -->
+            <div class="row g-3 mb-3">
+                <!-- User Profile Card -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header-custom"><i class="bi bi-person" style="color:#666;"></i> TEXT</div>
+                        <div class="card-body-custom pt-2">
+                            <div style="font-size: 10px; color: #aaa; margin-bottom: 5px;">Update 0000.00.00 00:00:00</div>
+                            <div class="mb-4"><span style="font-size: 24px; font-weight: bold; color: #111;">TEST</span> <span style="font-size:16px; color:#555;">님, 환영합니다.</span></div>
+                            
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="text-label me-3" style="width:140px;">TEXT : 0000-0000-0000 TEXT</span>
+                                <button class="btn-outline-red">TEXT</button>
+                            </div>
+                            <div class="text-label mb-2">TEXT : TEXT</div>
+                            <div class="text-label mb-2">TEXT : TEXT</div>
+                            <div class="text-label mb-3">TEXT : 000-0000-0000</div>
+                            
+                            <div class="d-flex align-items-center">
+                                <span class="text-label me-2">TEXT : TEXT LINK</span>
+                                <span class="badge bg-dark rounded-pill fw-normal" style="font-size: 10px; padding: 4px 10px;">TEXT</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Chart Card -->
+                <div class="col-md-5">
+                    <div class="card">
+                        <div class="card-header-custom"><i class="bi bi-pie-chart-fill" style="color:#d81b2f;"></i> TEXT</div>
+                        <div class="card-body-custom">
+                            <div class="chart-container h-100 mt-2">
+                                <div class="donut-chart">
+                                    <div class="donut-inner">
+                                        <div class="donut-label">TEXT</div>
+                                        <div class="donut-value">50<span style="font-size:16px;">%</span></div>
+                                    </div>
+                                </div>
+                                <div class="chart-legend">
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background-color: #333;"></div>
+                                        <div>TEXT <span class="legend-val">10000</span></div>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background-color: #e0e0e0;"></div>
+                                        <div>TEXT <span class="legend-val">5000</span></div>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background-color: #d81b2f;"></div>
+                                        <div>TEXT <span class="legend-val">5000</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Empty Card -->
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-header-custom"><i class="bi bi-trophy" style="color:#aaa;"></i> TEXT</div>
+                        <div class="card-body-custom p-0 d-flex flex-column h-100">
+                            <div class="empty-placeholder border-bottom">TEXT</div>
+                            <div class="empty-placeholder">TEXT</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3 -->
+            <div class="row g-3">
+                <!-- Table Card -->
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header-custom"><i class="bi bi-file-text" style="color:#eab308;"></i> TEXT</div>
+                        <div class="card-body-custom pt-3">
+                            <div class="tab-buttons">
+                                <button class="tab-btn active">TEXT</button>
+                                <button class="tab-btn">TEXT</button>
+                                <button class="tab-btn">TEXT</button>
+                                <button class="tab-btn">TEXT</button>
+                            </div>
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th>TEXT</th>
+                                        <th>TEXT</th>
+                                        <th>TEXT</th>
+                                        <th>TEXT</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>0000.00.00</td>
+                                        <td>TEXT</td>
+                                        <td class="fw-bold text-dark">₩3,300,000</td>
+                                        <td><button class="btn btn-outline-info">TEXT</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>0000.00.00</td>
+                                        <td>TEXT</td>
+                                        <td class="fw-bold text-dark">₩3,300,000</td>
+                                        <td><button class="btn btn-outline-info">TEXT</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>0000.00.00</td>
+                                        <td>TEXT</td>
+                                        <td class="fw-bold text-dark">₩3,300,000</td>
+                                        <td><button class="btn btn-outline-info">TEXT</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <!-- Notice Card -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header-custom"><i class="bi bi-megaphone-fill" style="color:#555;"></i> TEXT</div>
+                        <div class="card-body-custom pt-3">
+                            <div class="notice-card">
+                                현재 공지사항입니다. 오픈개발 준비중입니다.
+                                <span class="date">0000-00-00 00:00:00</span>
+                            </div>
+                            <div class="notice-card">
+                                현재 공지사항입니다. 오픈개발 준비중입니다.
+                                <span class="date">0000-00-00 00:00:00</span>
+                            </div>
+                            <div class="notice-card">
+                                현재 공지사항입니다. 오픈개발 준비중입니다.
+                                <span class="date">0000-00-00 00:00:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

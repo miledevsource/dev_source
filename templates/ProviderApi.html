@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .split-container { display: flex; gap: 20px; max-width: 1200px; margin: 20px; height: calc(100vh - 100px); }
+    
+    /* 좌측 리스트 영역 */
+    .list-panel { width: 350px; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
+    .list-header { background: #8e44ad; color: white; padding: 15px; font-weight: bold; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .api-list { flex: 1; overflow-y: auto; padding: 10px; margin: 0; list-style: none; }
+    .api-item { padding: 12px; border: 1px solid #eee; border-radius: 4px; margin-bottom: 8px; cursor: pointer; transition: 0.2s; }
+    .api-item:hover { background: #f8f9fa; border-color: #8e44ad; }
+    .api-item.active { background: #f3e5f5; border-color: #8e44ad; border-left: 4px solid #8e44ad; }
+    .api-item-title { font-weight: bold; font-size: 14px; color: #333; margin-bottom: 5px; }
+    .api-item-desc { font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .api-badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; background: #e9ecef; color: #495057; display: inline-block; margin-top: 5px;}
+    .badge-ora { background: #f8d7da; color: #721c24; }
+    .badge-pg { background: #cce5ff; color: #004085; }
+
+    /* 우측 폼 영역 */
+    .form-panel { flex: 1; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow-y: auto; }
+    .form-panel h2 { color: #333; border-bottom: 2px solid #8e44ad; padding-bottom: 10px; font-weight: 700; font-size: 20px; margin-top: 0; }
+    
+    .form-group { display: flex; align-items: center; margin-bottom: 15px; }
+    .form-group label.title-label { width: 140px; font-weight: 600; font-size: 14px; color: #444; margin-bottom: 0; flex-shrink: 0; }
+    .form-group input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; }
+    .form-group textarea { flex: 1; padding: 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; min-height: 200px; font-family: Consolas, monospace; background-color: #f8f9fa; }
+    
+    .radio-group { display: flex; gap: 20px; align-items: center; flex: 1; }
+    .radio-group label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 14px; }
+
+    .param-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: center; }
+    .param-row input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    
+    .action-buttons { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-custom { color: white; border: none; border-radius: 4px; padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; flex: 1;}
+    .btn-save { background-color: #8e44ad; }
+    .btn-save:hover { background-color: #732d91; }
+    .btn-delete { background-color: #dc3545; flex: 0.3; display: none; }
+    .btn-delete:hover { background-color: #c82333; }
+    .btn-new { background-color: #28a745; padding: 5px 10px; font-size: 12px; width: auto; flex: none; }
+    .btn-add { background-color: #007bff; padding: 5px 10px; font-size: 12px; width: auto; margin: 0; flex: none;}
+    .btn-del { background-color: #dc3545; padding: 8px 12px; font-size: 12px; width: auto; margin: 0; flex: none;}
+
+    /* 테스트 코드 영역 스타일 */
+    .test-code-section { margin-top: 35px; padding-top: 25px; border-top: 2px dashed #ddd; display: none; }
+    .test-code-section h3 { font-size: 16px; color: #333; margin-bottom: 15px; font-weight: bold; display: flex; align-items: center; gap: 8px;}
+    .code-block-wrapper { margin-bottom: 20px; }
+    .code-title { font-size: 13px; font-weight: bold; color: #555; background: #f1f3f5; padding: 8px 12px; border-radius: 6px 6px 0 0; border: 1px solid #ddd; border-bottom: none; display: inline-block;}
+    .code-pre { margin: 0; background-color: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 0 6px 6px 6px; font-family: Consolas, monospace; font-size: 13px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
+    .code-pre .keyword { color: #569cd6; }
+    .code-pre .string { color: #ce9178; }
+</style>
+
+<div class="split-container">
+    <div class="list-panel">
+        <div class="list-header">
+            등록된 API 목록
+            <button class="btn-custom btn-new" onclick="resetForm()">+ 신규 등록</button>
+        </div>
+        <ul class="api-list" id="apiListContainer">
+            </ul>
+    </div>
+
+    <div class="form-panel">
+        <h2 id="formTitle">✨ 신규 API 등록</h2>
+        
+        <div class="form-group">
+            <label class="title-label">🌐 호출 API ID:</label>
+            <input type="text" id="apiId" placeholder="예: GET_INFO_HSP_LIST (영문/숫자/언더바)">
+        </div>
+        <div class="form-group">
+            <label class="title-label">📝 API 설명:</label>
+            <input type="text" id="apiName" placeholder="예: 병원리스트 가져오기">
+        </div>
+
+        <div class="form-group">
+            <label class="title-label">🗄️ 대상 DB 선택:</label>
+            <div class="radio-group">
+                <label><input type="radio" name="targetDb" value="ORACLE" checked> Oracle DB</label>
+                <label><input type="radio" name="targetDb" value="POSTGRES"> PostgreSQL</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="title-label">⚙️ 실행 방식:</label>
+            <div class="radio-group">
+                <label><input type="radio" name="execType" value="QUERY" checked> 일반 쿼리 (SELECT)</label>
+                <label><input type="radio" name="execType" value="PROCEDURE"> 프로시저/패키지</label>
+            </div>
+        </div>
+
+        <div class="form-group" style="align-items: flex-start; flex-direction: column;">
+            <div style="display: flex; width: 100%; align-items: center; margin-bottom: 10px;">
+                <label class="title-label" style="margin-bottom: 0;">📌 필수 파라미터:</label>
+                <button class="btn-custom btn-add" onclick="addParamRow()">➕ 파라미터 추가</button>
+            </div>
+            <div id="paramList" style="width: 100%; padding-left: 140px; box-sizing: border-box;">
+                </div>
+        </div>
+
+        <div class="form-group" style="align-items: flex-start;">
+            <label class="title-label" style="margin-top: 10px;">📜 SQL 쿼리문:</label>
+            <textarea id="execText" placeholder="SELECT * FROM table WHERE id = :patient_id"></textarea>
+        </div>
+
+        <div class="action-buttons">
+            <button id="btnDelete" class="btn-custom btn-delete" onclick="deleteApi()">🗑️ 삭제</button>
+            <button class="btn-custom btn-save" onclick="saveApi()">🚀 설정 저장 및 배포</button>
+        </div>
+
+        <div id="testCodeSection" class="test-code-section">
+            <h3>💻 타 시스템 개발자를 위한 연동 가이드 및 테스트 코드</h3>
+            <p style="font-size: 13px; color: #666; margin-bottom: 20px;">아래 코드를 복사하여 외부 연동 담당자에게 전달하시면 즉시 테스트가 가능합니다.</p>
+            
+            <div class="code-block-wrapper">
+                <div class="code-title">1. Postman / cURL (Mac, Linux, Bash) 테스트 방법</div>
+                <pre class="code-pre" id="codeCurl"></pre>
+            </div>
+            
+            <div class="code-block-wrapper">
+                <div class="code-title">2. Python (requests) 예제</div>
+                <pre class="code-pre" id="codePython"></pre>
+            </div>
+
+            <div class="code-block-wrapper">
+                <div class="code-title">3. JavaScript (Fetch API) 예제</div>
+                <pre class="code-pre" id="codeJs"></pre>
+            </div>
+
+            <div class="code-block-wrapper">
+                <div class="code-title">4. Windows 명령 프롬프트 (DOS/CMD) cURL 예제</div>
+                <pre class="code-pre" id="codeCmd"></pre>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    let currentApiId = null;
+
+    window.onload = () => {
+        loadApiList();
+        resetForm();
+    };
+
+    function addParamRow(key = '', desc = '') {
+        const list = document.getElementById('paramList');
+        const row = document.createElement('div');
+        row.className = 'param-row';
+        row.innerHTML = `
+            <input type="text" class="param-key" value="${key}" placeholder="변수명 (예: IN_HSP_TP_CD)">
+            <input type="text" class="param-desc" value="${desc}" placeholder="설명 (예: 병원구분코드)">
+            <button class="btn-custom btn-del" onclick="this.parentElement.remove()">❌</button>
+        `;
+        list.appendChild(row);
+    }
+
+    function resetForm() {
+        currentApiId = null;
+        document.getElementById('formTitle').innerText = "✨ 신규 API 등록";
+        document.getElementById('apiId').value = "";
+        document.getElementById('apiId').readOnly = false;
+        document.getElementById('apiName').value = "";
+        document.querySelector('input[name="targetDb"][value="ORACLE"]').checked = true;
+        document.querySelector('input[name="execType"][value="QUERY"]').checked = true;
+        document.getElementById('paramList').innerHTML = "";
+        document.getElementById('execText').value = "";
+        addParamRow(); 
+        
+        document.getElementById('btnDelete').style.display = "none";
+        document.getElementById('testCodeSection').style.display = "none";
+        
+        document.querySelectorAll('.api-item').forEach(item => item.classList.remove('active'));
+    }
+
+    async function loadApiList() {
+        try {
+            const res = await fetch('/api/provider/list');
+            const result = await res.json();
+            const container = document.getElementById('apiListContainer');
+            container.innerHTML = "";
+
+            if (res.ok && result.data) {
+                result.data.forEach(api => {
+                    const li = document.createElement('li');
+                    li.className = 'api-item';
+                    li.id = `item-${api.api_id}`;
+                    li.onclick = () => loadApiDetail(api.api_id);
+                    
+                    const badgeClass = api.target_db === 'ORACLE' ? 'badge-ora' : 'badge-pg';
+                    
+                    li.innerHTML = `
+                        <div class="api-item-title">${api.api_id}</div>
+                        <div class="api-item-desc">${api.api_name || '설명 없음'}</div>
+                        <span class="api-badge ${badgeClass}">${api.target_db} | ${api.exec_type}</span>
+                    `;
+                    container.appendChild(li);
+                });
+            }
+        } catch (e) {
+            console.error("목록 조회 실패", e);
+        }
+    }
+
+    async function loadApiDetail(apiId) {
+        try {
+            const res = await fetch(`/api/provider/detail/${apiId}`);
+            const result = await res.json();
+
+            if (res.ok && result.data) {
+                const data = result.data;
+                currentApiId = data.api_id;
+                
+                document.getElementById('formTitle').innerText = `✏️ API 수정: ${data.api_id}`;
+                document.getElementById('apiId').value = data.api_id;
+                document.getElementById('apiId').readOnly = true;
+                document.getElementById('apiName').value = data.api_name || '';
+                document.querySelector(`input[name="targetDb"][value="${data.target_db}"]`).checked = true;
+                document.querySelector(`input[name="execType"][value="${data.exec_type}"]`).checked = true;
+                document.getElementById('execText').value = data.exec_text || '';
+                
+                document.getElementById('paramList').innerHTML = "";
+                if (data.req_params && data.req_params.length > 0) {
+                    data.req_params.forEach(p => addParamRow(p.key, p.desc));
+                } else {
+                    addParamRow();
+                }
+
+                document.getElementById('btnDelete').style.display = "block";
+
+                document.querySelectorAll('.api-item').forEach(item => item.classList.remove('active'));
+                const activeItem = document.getElementById(`item-${apiId}`);
+                if(activeItem) activeItem.classList.add('active');
+
+                generateTestCodes(data.api_id, data.req_params);
+            }
+        } catch (e) {
+            alert("상세 정보를 불러오지 못했습니다.");
+        }
+    }
+
+    async function saveApi() {
+        const apiId = document.getElementById('apiId').value.trim();
+        const apiName = document.getElementById('apiName').value.trim();
+        const targetDb = document.querySelector('input[name="targetDb"]:checked').value;
+        const execType = document.querySelector('input[name="execType"]:checked').value;
+        const execText = document.getElementById('execText').value.trim();
+
+        if (!apiId || !execText) return alert("API ID와 쿼리문은 필수입니다.");
+
+        const reqParams = [];
+        document.querySelectorAll('.param-row').forEach(row => {
+            const key = row.querySelector('.param-key').value.trim();
+            const desc = row.querySelector('.param-desc').value.trim();
+            if (key) reqParams.push({ key, desc });
+        });
+
+        const payload = { api_id: apiId, api_name: apiName, target_db: targetDb, exec_type: execType, exec_text: execText, req_params: reqParams };
+
+        try {
+            const res = await fetch('/api/provider/save', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            
+            if (res.ok) {
+                alert(`✅ 저장 완료\n호출 주소: POST /api/v1/external/${apiId}`);
+                loadApiList(); 
+                
+                currentApiId = apiId;
+                document.getElementById('apiId').readOnly = true;
+                document.getElementById('btnDelete').style.display = "block";
+                generateTestCodes(apiId, reqParams);
+                
+            } else throw new Error(result.error || result.message);
+        } catch (error) {
+            alert(`❌ 저장 실패: ${error.message}`);
+        }
+    }
+
+    async function deleteApi() {
+        if (!currentApiId) return;
+        if (!confirm(`정말 '${currentApiId}' API를 삭제하시겠습니까?\n삭제 후에는 타 시스템에서 호출할 수 없습니다.`)) return;
+
+        try {
+            const res = await fetch(`/api/provider/delete/${currentApiId}`, { method: 'DELETE' });
+            if (res.ok) {
+                alert("🗑️ 삭제가 완료되었습니다.");
+                loadApiList();
+                resetForm();
+            } else {
+                alert("❌ 삭제에 실패했습니다.");
+            }
+        } catch (e) {
+            alert("서버 오류가 발생했습니다.");
+        }
+    }
+
+    // 테스트 코드 생성 로직
+    function generateTestCodes(apiId, params) {
+        if (!apiId) {
+            document.getElementById('testCodeSection').style.display = 'none';
+            return;
+        }
+
+        const baseUrl = window.location.origin;
+        const apiUrl = `${baseUrl}/api/v1/external/${apiId}`;
+
+        const samplePayload = {};
+        if (params && params.length > 0) {
+            params.forEach(p => {
+                if (p.key) samplePayload[p.key] = "테스트_값_입력";
+            });
+        }
+        
+        const prettyJson = JSON.stringify(samplePayload, null, 4);
+        const singleLineJson = JSON.stringify(samplePayload);
+
+        // 1. cURL (Mac, Linux)
+        const curlCode = `curl -X POST ${apiUrl} \\\n     -H "Content-Type: application/json" \\\n     -d '${singleLineJson}'`;
+
+        // 2. Python
+        const pyCode = `<span class="keyword">import</span> requests
+
+url = <span class="string">"${apiUrl}"</span>
+headers = {<span class="string">"Content-Type"</span>: <span class="string">"application/json"</span>}
+payload = ${prettyJson}
+
+response = requests.post(url, json=payload, headers=headers)
+<span class="keyword">print</span>(response.json())`;
+
+        // 3. JavaScript
+        const jsCode = `fetch(<span class="string">'${apiUrl}'</span>, {
+    method: <span class="string">'POST'</span>,
+    headers: { <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span> },
+    body: JSON.stringify(${prettyJson})
+})
+.then(res => res.json())
+.then(data => console.log(data));`;
+
+        // 🚀 4. Windows CMD (DOS) 전용 cURL
+        // CMD에서는 멀티라인에 ^ 를 사용하고, JSON 내부의 큰따옴표(")를 역슬래시(\")로 이스케이프 해야 합니다.
+        // 그리고 바깥쪽은 작은따옴표가 아닌 큰따옴표(")로 감싸야 합니다.
+        const escapedJsonForCmd = singleLineJson.replace(/"/g, '\\"');
+        const cmdCode = `curl -X POST ${apiUrl} ^\n     -H "Content-Type: application/json" ^\n     -d "${escapedJsonForCmd}"`;
+
+        document.getElementById('codeCurl').textContent = curlCode;
+        document.getElementById('codePython').innerHTML = pyCode;
+        document.getElementById('codeJs').innerHTML = jsCode;
+        document.getElementById('codeCmd').textContent = cmdCode; // 🚀 DOS 모드 렌더링
+        
+        document.getElementById('testCodeSection').style.display = 'block';
+    }
+</script>
+{% endblock %}

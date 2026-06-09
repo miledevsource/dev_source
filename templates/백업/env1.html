@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .setting-container { background-color: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 900px; margin: 20px; }
+    .setting-container h2 { color: #333; border-bottom: 2px solid #17a2b8; padding-bottom: 10px; font-weight: 700; font-size: 20px; }
+    
+    .form-group { display: flex; align-items: flex-start; margin-bottom: 15px; flex-direction: column; }
+    .form-group.row-layout { flex-direction: row; align-items: center; }
+    .form-group label.title-label { width: 160px; font-weight: 600; font-size: 14px; color: #444; margin-bottom: 0; flex-shrink: 0; }
+    
+    .form-group input[type="text"], .form-group input[type="password"] { flex: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; width: 100%; box-sizing: border-box; }
+    .form-group input:focus, .form-group textarea:focus { border-color: #80bdff; outline: 0; }
+    
+    .form-group textarea { flex: 1; padding: 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px; width: 100%; min-height: 200px; font-family: Consolas, monospace; box-sizing: border-box; background-color: #f8f9fa; }
+
+    .btn-custom { color: white; border: none; border-radius: 4px; padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; margin-top: 10px; }
+    .btn-test { background-color: #17a2b8; }
+    .btn-test:hover { background-color: #138496; }
+    .btn-save { background-color: #28a745; }
+    .btn-save:hover { background-color: #218838; }
+
+    /* 🚀 연결 성공 시 나타날 영역 숨김 처리 */
+    .hidden-section { display: none; margin-top: 35px; padding-top: 25px; border-top: 2px dashed #ddd; }
+    
+    .section-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 15px; }
+</style>
+
+<div class="setting-container">
+    <h2>⚙️ 기본 DB 셋팅 (PostgreSQL)</h2>
+    <p style="font-size: 13px; color: #666; margin-bottom: 25px;">웹 서비스의 메인 데이터베이스인 PostgreSQL 접속 정보를 설정하고 테이블을 구성합니다.</p>
+    
+    <div class="form-section">
+        <div class="form-group row-layout">
+            <label class="title-label">🌐 호스트 (IP):</label>
+            <input type="text" id="pgHost" value="127.0.0.1" placeholder="예: 127.0.0.1 또는 localhost">
+        </div>
+        <div class="form-group row-layout">
+            <label class="title-label">🚪 포트 (Port):</label>
+            <input type="text" id="pgPort" value="5432" placeholder="예: 5432">
+        </div>
+        <div class="form-group row-layout">
+            <label class="title-label">🗄️ 데이터베이스명:</label>
+            <input type="text" id="pgDbName" value="icu_db" placeholder="예: icu_db">
+        </div>
+        <div class="form-group row-layout">
+            <label class="title-label">👤 접속 계정:</label>
+            <input type="text" id="pgUser" value="postgres" placeholder="예: postgres">
+        </div>
+        <div class="form-group row-layout">
+            <label class="title-label">🔑 접속 비밀번호:</label>
+            <input type="password" id="pgPassword" placeholder="비밀번호를 입력하세요">
+        </div>
+    </div>
+    
+    <button id="btnTestConn" class="btn-custom btn-test" onclick="testDbConnection()">🔌 DB 연결 테스트</button>
+
+    <div id="scriptSection" class="hidden-section">
+        <div class="section-title">📝 테이블 및 스키마 초기 셋팅</div>
+        
+        <div class="form-group row-layout" style="margin-bottom: 20px;">
+            <label class="title-label">🎯 기본 스키마명:</label>
+            <input type="text" id="pgSchema" value="icu" placeholder="사용할 스키마 이름을 입력하세요 (예: icu, public)">
+        </div>
+        
+        <div class="form-group">
+            <label class="title-label" style="margin-bottom: 10px; width: auto;">📜 테이블 생성 스크립트 (DDL):</label>
+            <textarea id="pgScript" placeholder="여기에 CREATE TABLE 등의 스크립트를 입력하세요...&#10;&#10;예시:&#10;CREATE TABLE icu.agent_config_master (&#10;    hospital_code VARCHAR(20) PRIMARY KEY,&#10;    config_xml TEXT,&#10;    config_version INTEGER,&#10;    updated_at TIMESTAMP&#10;);"></textarea>
+        </div>
+
+        <button id="btnExecuteScript" class="btn-custom btn-save" onclick="executeScript()">💾 스크립트 실행 및 설정 저장</button>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 1. DB 연결 테스트 기능
+    // ==========================================
+    async function testDbConnection() {
+        const host = document.getElementById('pgHost').value.trim();
+        const port = document.getElementById('pgPort').value.trim();
+        const dbname = document.getElementById('pgDbName').value.trim();
+        const user = document.getElementById('pgUser').value.trim();
+        const password = document.getElementById('pgPassword').value.trim();
+        const btnTest = document.getElementById('btnTestConn');
+
+        if (!host || !port || !dbname || !user || !password) {
+            alert("모든 접속 정보를 입력해주세요.");
+            return;
+        }
+
+        // 버튼 상태 변경 (로딩)
+        btnTest.disabled = true;
+        btnTest.innerText = "⏳ 연결 확인 중...";
+
+        try {
+            /* * 🚀 [나중에 백엔드 연결 시 활성화할 코드]
+             * const response = await fetch('/api/env/test-connection', {
+             * method: 'POST',
+             * headers: { 'Content-Type': 'application/json' },
+             * body: JSON.stringify({ host, port, dbname, user, password })
+             * });
+             * const result = await response.json();
+             * if(response.ok) { ... }
+             */
+
+            // 현재는 프론트엔드 UI 확인을 위해 무조건 성공한다고 가정합니다. (1초 대기 후 팝업)
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // 연결 성공 팝업 (Alert)
+            alert(`✅ 연결 성공!\n[${host}:${port}] PostgreSQL DB에 정상적으로 연결되었습니다.`);
+            
+            // 버튼 색상 및 텍스트 변경
+            btnTest.style.backgroundColor = "#28a745";
+            btnTest.innerText = "✅ DB 연결 확인 완료";
+
+            // 숨겨져 있던 스키마/스크립트 입력 영역을 부드럽게 보여줌
+            document.getElementById('scriptSection').style.display = 'block';
+
+        } catch (error) {
+            alert(`❌ 연결 실패!\n입력하신 정보를 다시 확인해주세요.\n(에러: ${error.message})`);
+            btnTest.disabled = false;
+            btnTest.innerText = "🔌 DB 연결 테스트";
+            document.getElementById('scriptSection').style.display = 'none';
+        }
+    }
+
+    // ==========================================
+    // 2. 스크립트 실행 기능
+    // ==========================================
+    async function executeScript() {
+        const schemaName = document.getElementById('pgSchema').value.trim();
+        const scriptContent = document.getElementById('pgScript').value.trim();
+
+        if (!schemaName) {
+            alert("기본 스키마명을 입력해주세요.");
+            return;
+        }
+
+        if (!scriptContent) {
+            alert("실행할 테이블 생성 스크립트를 입력해주세요.");
+            return;
+        }
+
+        // 사용자 최종 확인
+        if (!confirm(`[${schemaName}] 스키마에 스크립트를 실행하시겠습니까?`)) {
+            return;
+        }
+
+        // 버튼 상태 변경
+        const btnExec = document.getElementById('btnExecuteScript');
+        btnExec.disabled = true;
+        btnExec.innerText = "⏳ 스크립트 실행 중...";
+
+        try {
+            // 🚀 백엔드 API 호출이 들어갈 자리
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            alert("🎉 스크립트가 성공적으로 실행되었습니다!");
+        } catch (error) {
+            alert(`❌ 스크립트 실행 오류!\n(에러: ${error.message})`);
+        } finally {
+            btnExec.disabled = false;
+            btnExec.innerText = "💾 스크립트 실행 및 설정 저장";
+        }
+    }
+</script>
+{% endblock %}

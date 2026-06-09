@@ -1,0 +1,23 @@
+<Config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <ConnectionAddress>
+	  <ACM>http://localhost:8080/EICU_Agent_Service/EICU_Agent.svc</ACM>
+	  <EMS>http://localhost:8080/EICU_Agent_Service/EICU_Agent.svc</EMS>
+	  <RRS>http://localhost:8080/RRT_Svc_neoFramework/RRT_NeoFamework.svc</RRS>
+	  <EMSICU>http://localhost:8080/EICU_Agent_Service/EICU_Agent.svc</EMSICU>
+	  <DASHBOARD>http://localhost:8080/EICU_DashBoard_Service/EICU_DashBoard.svc</DASHBOARD>
+	  <CCTV>http://172.17.13.212:8000/EICU_Agent_Service/EICU_Agent.svc</CCTV>
+	  <WAVEFORMS>http://localhost:8080/EICU_Agent_Service/EICU_Agent.svc</WAVEFORMS>
+	  <WAVEFORMS_URL>https://vital.eicu.co.kr</WAVEFORMS_URL>
+  </ConnectionAddress>
+  <LOCALConnectionAddress>
+	  <ACM>http://localhost:8080/EICU_Agent_Service/EICU_Agent.svc</ACM>
+	  <EMS>http://localhost:8080/EICU_Agent_Service/EICU_Agent.svc</EMS>
+          <RRS>http://localhost:8080/RRT_Svc_neoFramework/RRT_NeoFamework.svc</RRS>
+	  <CCTV>http://172.17.13.212:8000/EICU_Agent_Service/EICU_Agent.svc</CCTV>
+	  <EMSICU>http://localhost:8080/EICU_Agent_Service/EICU_Agent.svc</EMSICU>
+          <DASHBOARD>http://localhost:8080/EICU_DashBoard_Service/EICU_DashBoard.svc</DASHBOARD>
+	  <CCTV>http://172.17.13.212:8000/EICU_Agent_Service/EICU_Agent.svc</CCTV>
+	  <WAVEFORMS>http://localhost:8080/EICU_Agent_Service/EICU_Agent.svc</WAVEFORMS>
+          <WAVEFORMS_URL>https://vital.eicu.co.kr</WAVEFORMS_URL>
+</LOCALConnectionAddress>
+</Config>
